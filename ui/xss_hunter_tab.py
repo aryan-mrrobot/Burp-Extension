@@ -601,8 +601,34 @@ class XSSHunterTab(ITab):
 
                 controlPanel.add(advancedPanel, gbc)
 
-                # Control buttons
+                # Parameter probing configuration
                 gbc.gridy = 4
+                gbc.gridwidth = 2
+                gbc.fill = JavaGridBagConstraints.HORIZONTAL
+                paramPanel = JavaJPanel(JavaFlowLayout(JavaFlowLayout.LEFT))
+                paramPanel.setBorder(
+                    JavaBorderFactory.createTitledBorder("Parameter Discovery")
+                )
+                self.enableParamProbing = JavaJCheckBox(
+                    "Enable Common Param Probing", True
+                )
+                paramPanel.add(self.enableParamProbing)
+                from javax.swing import JTextArea as JavaJTextArea
+
+                self.paramProbeList = JavaJTextArea(
+                    "q\nsearch\nname\nid\npage\nredirect\nref\ntoken\nnext\nreturn\nlang\nlocale\nsort\norder\nfilter",
+                    5,
+                    25,
+                )
+                self.paramProbeList.setBorder(
+                    JavaBorderFactory.createTitledBorder("Wordlist (one per line)")
+                )
+                paramScroll = JavaJScrollPane(self.paramProbeList)
+                paramPanel.add(paramScroll)
+                controlPanel.add(paramPanel, gbc)
+
+                # Control buttons
+                gbc.gridy = 5
                 gbc.fill = JavaGridBagConstraints.NONE
                 gbc.anchor = JavaGridBagConstraints.CENTER
 
@@ -624,7 +650,7 @@ class XSSHunterTab(ITab):
                 controlPanel.add(buttonPanel, gbc)
 
                 # Progress bar
-                gbc.gridy = 5
+                gbc.gridy = 6
                 gbc.fill = JavaGridBagConstraints.HORIZONTAL
                 gbc.insets = JavaInsets(10, 5, 5, 5)
 
@@ -1112,6 +1138,9 @@ class XSSHunterTab(ITab):
 
     def clearResults(self):
         self.resultsTableModel.setRowCount(0)
+        # Also clear the status area to reflect reset
+        if hasattr(self, "statusArea") and self.statusArea:
+            self.statusArea.setText("XSS Hunter Pro Scanner Ready\n\n")
 
     def setProgress(self, value, text=""):
         from javax.swing import SwingUtilities
@@ -1338,6 +1367,12 @@ class XSSHunterTab(ITab):
         if hasattr(self, "httpTrafficArea"):
             self.httpTrafficArea.setText("HTTP traffic logs cleared...\n")
 
+    def resetProgress(self):
+        """Reset progress bar to Ready state"""
+        if hasattr(self, "progressBar") and self.progressBar:
+            self.progressBar.setValue(0)
+            self.progressBar.setString("Ready")
+
     def _get_timestamp(self):
         """Get current timestamp for logging"""
         import time
@@ -1384,6 +1419,11 @@ class StopScanAction(ActionListener):
         self.tab.updateStatus("Scan stopped by user")
         self.tab.startScanButton.setEnabled(True)
         self.tab.stopScanButton.setEnabled(False)
+        # Reset progress bar to reflect stop
+        try:
+            self.tab.resetProgress()
+        except Exception:
+            pass
 
 
 class ClearResultsAction(ActionListener):
@@ -1395,6 +1435,10 @@ class ClearResultsAction(ActionListener):
         self.tab.clearDiscoveredUrls()
         self.tab.clearBackendLogs()
         self.tab.clearHttpTraffic()
+        try:
+            self.tab.resetProgress()
+        except Exception:
+            pass
         self.tab.updateStatus("All results and logs cleared")
 
 

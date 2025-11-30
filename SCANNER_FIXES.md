@@ -22,6 +22,7 @@ The XSS Scanner was getting stuck during the scanning portion due to:
 - Detailed console output for each step of scanning process
 - Progress indicators: "Testing payload X/Y", "Parameter N/Total"
 - Real-time status updates in the UI
+- Progress bar reflects phases: baseline → crawl → parameter testing
 
 ### ✅ 3. Parameter Testing Timeout (5 minutes max)
 
@@ -37,9 +38,11 @@ The XSS Scanner was getting stuck during the scanning portion due to:
 
 ### ✅ 5. Performance Optimizations
 
-- Limited payload selection (19 most effective payloads vs all 187)
+- Limited payload selection (focused, capped at 50 per parameter)
 - Configurable delays between requests (0.1s default)
 - Early termination when XSS is found in a parameter
+- Crawl with depth/URL limits to bound discovery set
+- Per‑page testing to avoid irrelevant injections
 
 ## Testing Results
 
@@ -56,19 +59,21 @@ When scanning in Burp Suite:
 
 ```
 Scanning URL: https://example.com/search?q=test
-Found 2 parameters to test
+Baseline request completed
+CSP/WAF analysis done
+Found N parameters to test (after crawl/probing)
 ```
 
 ### During Scanning:
 
 ```
-Testing parameter 1/2: q
-Testing payload 1/19: <script>alert('XSS')</script>
+Testing parameter 1/N: q (page: https://example.com/search)
+Testing payload 1/50: <script>alert('XSS')</script>
 Sending request to: https://example.com/search?q=<script>alert('XSS')</script>
 Request completed successfully
 Response received, analyzing...
 No XSS detected in response
-Testing payload 2/19: <script>alert(String.fromCharCode(88,83,83))</script>
+Testing payload 2/50: <script>alert(String.fromCharCode(88,83,83))</script>
 ```
 
 ### If Request Times Out:
@@ -81,13 +86,13 @@ No response received (timeout or error)
 ### If XSS Found:
 
 ```
-XSS FOUND! Parameter: q, Payload: <script>alert('XSS')</script>
+XSS FOUND! Page: https://example.com/search, Parameter: q, Payload: <script>alert('XSS')</script>
 ```
 
 ### When Parameter Complete:
 
 ```
-Completed testing parameter: q
+Completed testing parameter: q (page: https://example.com/search)
 Parameter 'q' testing completed in 45.2 seconds
 ```
 
@@ -101,14 +106,17 @@ Parameter 'q' testing completed in 45.2 seconds
 2. **Start a Scan**:
 
    - Enter target URL in Scanner tab
+   - Configure crawl depth / max URLs as needed
+   - (Optional) Enable Parameter Probing and edit wordlist
    - Click "Start Scan"
    - Monitor the status area for real-time progress
 
 3. **Monitor Progress**:
 
    - Check Burp Suite Extender → Output tab for detailed logs
-   - Progress bar shows overall completion percentage
+   - Progress bar shows baseline/crawl/testing phases
    - Status area shows current activity
+   - Discovered URLs list updates during crawl
 
 4. **Stop if Needed**:
    - Click "Stop Scan" button to halt scanning
@@ -121,6 +129,8 @@ Parameter 'q' testing completed in 45.2 seconds
 - Check network connectivity to target
 - Reduce payload count in scanner settings
 - Increase delay between requests
+- Lower crawl depth or max URLs
+- Narrow parameter probing wordlist
 
 ### If No Progress Updates:
 

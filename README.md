@@ -20,6 +20,7 @@ XSS Hunter Pro is a comprehensive Burp Suite extension designed to detect reflec
 - **Results Tab**: View and manage scan results with severity indicators
 - **Payloads Tab**: Manage and customize XSS payloads
 - **Configuration Tab**: Configure extension settings and preferences
+- **Parameter Discovery Panel**: Toggle probing of common parameter names and edit the custom wordlist used during probing
 
 ### Advanced Features
 
@@ -28,6 +29,8 @@ XSS Hunter Pro is a comprehensive Burp Suite extension designed to detect reflec
 - **CSP Analysis**: Detailed analysis of Content Security Policy headers
 - **Context Analysis**: Determines injection context for targeted payloads
 - **Custom Payloads**: Support for user-defined payload sets
+- **Crawling & Endpoint Discovery**: Breadth‑first crawl with configurable depth and URL limits; discovers parameters from links, forms, robots.txt and sitemap.xml
+- **Per‑Page Parameter Testing**: Parameters are associated with the page they were found on and tested against that specific URL
 
 ## Installation
 
@@ -65,6 +68,13 @@ project/
 3. Configure scan options (Reflected XSS, CSP Bypass, WAF Bypass)
 4. Click "Start Scan" to begin testing
 
+### Parameter Probing
+
+1. In the Scanner tab, locate the "Parameter Discovery" panel
+2. Enable "Probe common parameter names" to test additional parameters when needed
+3. Edit the wordlist to include names like `q`, `name`, `id`, etc. (newline, space, or comma‑separated)
+4. The scanner will add these parameters to the test set and associate them with the current page
+
 ### Payload Management
 
 1. Go to the Payloads tab
@@ -83,6 +93,7 @@ project/
    - Vulnerability type and severity
    - CSP information
    - Current status
+   - Source page used for testing
 
 ## Payload Categories
 
@@ -120,6 +131,8 @@ project/
 
 - **Timeout**: Request timeout in seconds
 - **Follow Redirects**: Whether to follow HTTP redirects
+- **Crawl Depth / Max URLs**: Configure site crawling to discover pages and parameters
+- **Parameter Probing**: Toggle probing and edit custom parameter name wordlist
 
 ### Proxy Settings
 
@@ -180,7 +193,7 @@ Identifies popular WAF solutions including:
 
 2. **Use Debug Mode**:
 
-   - The extension includes multiple test tabs for debugging (MinimalTestTab, SimpleTestTab)
+   - The extension previously included fallback debug tabs. Current UI is consolidated into `XSSHunterTab`.
    - Check the Extender → Extensions → Output tab for detailed logs
 
 3. **Verify File Paths**:
@@ -207,18 +220,11 @@ Identifies popular WAF solutions including:
 
 - Check Burp Suite's Extensions > Errors tab for Python errors
 - Monitor the extension output in the Scanner tab status area
-- The extension includes debug versions (MinimalTestTab, SimpleTestTab) that are automatically tried if the main UI fails
 - Enable verbose logging in configuration if needed
 
 ### Load Order Debugging
 
-The extension tries multiple UI approaches in this order:
-
-1. **MinimalTestTab**: Most basic Java Swing component
-2. **SimpleTestTab**: Simple UI with minimal functionality
-3. **XSSHunterTab**: Full featured interface
-
-If any level fails, check the Burp Suite Extender output for specific error messages.
+UI fallback components have been retired; ensure Burp's Jython is configured and refer to Extender output for any initialization errors.
 
 ## Contributing
 
@@ -239,6 +245,7 @@ This tool is intended for authorized security testing only. Users are responsibl
 - v1.1: Added CSP bypass capabilities
 - v1.2: Enhanced WAF detection and bypass techniques
 - v1.3: Improved UI and context-aware scanning
+- v1.4: Added crawling, per‑page parameter testing, and UI‑controlled parameter probing
 
 ## Support
 

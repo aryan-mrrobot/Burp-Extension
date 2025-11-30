@@ -7,22 +7,26 @@ Based on our comprehensive testing and debugging, your Burp Suite extension is n
 ## ✅ **What's Fixed:**
 
 ### 1. **JScrollPane Issues**
+
 - ✅ Multiple fallback methods for JScrollPane creation
 - ✅ Robust error handling with automatic fallback to direct text area
 - ✅ Detailed logging for debugging component creation issues
 
 ### 2. **Scanner Functionality**
-- ✅ 73 XSS payloads loaded and ready
+
+- ✅ Focused payload sets loaded and capped per parameter
 - ✅ Comprehensive scanning logic with CSP/WAF bypass
-- ✅ Multi-threaded scanning with progress tracking
-- ✅ URL field pre-populated with HackerOne URL
+- ✅ Crawl + endpoint discovery with configurable depth and URL limits
+- ✅ Per‑page parameter testing for accurate injections
 
 ### 3. **UI Components**
+
 - ✅ All Java Swing components properly imported and initialized
-- ✅ Fallback mechanisms for environments with limited Java access
-- ✅ UTF-8 encoding support across all files
+- ✅ Consolidated main UI (`XSSHunterTab`) with status/progress/logs
+- ✅ Parameter Discovery panel with probing toggle + editable wordlist
 
 ### 4. **Backend Integration**
+
 - ✅ XSSScanner fully integrated with UI
 - ✅ PayloadManager working with all payload types
 - ✅ CSP and WAF detection logic functional
@@ -30,6 +34,7 @@ Based on our comprehensive testing and debugging, your Burp Suite extension is n
 ## 🛠️ **Installation Instructions:**
 
 ### 1. **Copy Files to Burp**
+
 ```bash
 # Copy all project files to your Burp extension directory
 # Make sure all files maintain their directory structure:
@@ -41,6 +46,7 @@ Based on our comprehensive testing and debugging, your Burp Suite extension is n
 ```
 
 ### 2. **Load in Burp Suite**
+
 1. Open Burp Suite
 2. Go to `Extender` > `Extensions`
 3. Click `Add`
@@ -49,18 +55,22 @@ Based on our comprehensive testing and debugging, your Burp Suite extension is n
 6. Click `Next`
 
 ### 3. **Verify Installation**
+
 Look for these success messages in the extension output:
+
 ```
 ✓ Core Java/Swing classes imported successfully
 ✓ All custom modules imported successfully
-✓ Payload areas initialized successfully with Java components
+✓ Payload areas initialized successfully
 ✓ XSS Hunter Pro Extension Loaded Successfully!
 ```
 
 ## 🔧 **Troubleshooting:**
 
 ### If JScrollPane Error Occurs:
+
 The extension now has 3 fallback methods:
+
 1. **Direct instantiation** (`JScrollPane(textArea)`)
 2. **Viewport method** (`scrollPane.setViewportView(textArea)`)
 3. **Direct text area** (no scroll pane)
@@ -68,6 +78,7 @@ The extension now has 3 fallback methods:
 You'll see detailed logs showing which method succeeded.
 
 ### If Scanner Doesn't Work:
+
 1. Check that URL field contains a valid URL (starts with http/https)
 2. Verify Burp proxy is configured correctly
 3. Check extension output for error messages
@@ -75,33 +86,39 @@ You'll see detailed logs showing which method succeeded.
 ## 🎯 **Usage Instructions:**
 
 ### 1. **Scanner Tab**
-- **Target URL**: Pre-filled with `https://www.hackerone.com/`
-- **Scan Options**: Configure crawling, fuzzing, XSS types
-- **Bypass Techniques**: Enable CSP/WAF bypass methods
-- **Advanced Options**: Set crawl depth, max URLs, threads, delays
+
+- **Target URL**: Enter the URL to test (http/https)
+- **Scan Options**: Configure XSS types and bypass techniques
+- **Crawling**: Set crawl depth and max URLs for discovery
+- **Parameter Discovery**: Toggle probing and edit wordlist
+- **Advanced Options**: Threads, delays, timeouts
 
 ### 2. **Start Scanning**
-1. Enter or modify the target URL
-2. Configure scan options as needed
-3. Click "Start Comprehensive Scan"
-4. Monitor progress in the status area
-5. View discovered URLs in the right panel
+
+- Enter the target URL
+- Configure crawl depth / max URLs
+- (Optional) Enable Parameter Probing and adjust wordlist
+- Click "Start Scan"
+- Monitor progress, discovered URLs, and HTTP traffic
 
 ### 3. **View Results**
+
 - Switch to the **Results** tab to see found vulnerabilities
 - Use **Export Results** to save findings
 - **Filter Results** to focus on specific severity levels
 
 ### 4. **Manage Payloads**
-- **Payloads** tab contains 4 categories:
-  - Basic XSS (73 payloads)
+
+- **Payloads** tab contains categories:
+  - Basic XSS
   - CSP Bypass
-  - WAF Bypass  
+  - WAF Bypass
   - Custom payloads
 
 ## 📊 **Expected Behavior:**
 
 ### **Successful Load:**
+
 ```
 XSS Hunter Pro Scanner Ready
 Features:
@@ -114,11 +131,12 @@ Features:
 ```
 
 ### **During Scan:**
+
 ```
-Starting scan for: https://www.hackerone.com/
+Starting scan for: https://target.tld/
 Baseline request completed
 CSP Analysis: X potential bypasses found
-Found X parameters to test
+Found X parameters to test (after crawl/probing)
 Testing parameter: [parameter_name]
 Scan completed successfully
 ```
@@ -132,13 +150,7 @@ Scan completed successfully
 
 ## 🔍 **Debug Mode:**
 
-If you encounter issues, run the debug script:
-```python
-# In Jython/Burp environment:
-python debug_burp_extension.py
-```
-
-This will test all components and provide detailed diagnostic information.
+Refer to Burp Extender → Errors and Output for diagnostics; ensure Jython configuration is correct.
 
 ## 📈 **Performance:**
 
@@ -150,6 +162,7 @@ This will test all components and provide detailed diagnostic information.
 ## 🎉 **You're Ready!**
 
 Your XSS Hunter Pro extension is now production-ready with:
+
 - ✅ Robust error handling
 - ✅ Comprehensive XSS detection
 - ✅ Professional UI

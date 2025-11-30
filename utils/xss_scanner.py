@@ -32,6 +32,9 @@ class XSSScanner:
         self.payload_manager = payload_manager
         self.is_scanning = False
         self.scan_thread = None
+        # Maintain global discovery state per scan
+        self.visited_urls = set()
+        self.discovered_parameters = []
 
         # XSS detection patterns
         self.xss_patterns = [
@@ -58,6 +61,9 @@ class XSSScanner:
     def scan_url(self, url, ui_tab=None):
         """Main scanning function"""
         self.is_scanning = True
+        # Reset discovery state for new scan
+        self.visited_urls = set()
+        self.discovered_parameters = []
 
         try:
             print("=== XSS SCANNER DEBUG: Starting scan_url() ===")
@@ -143,9 +149,13 @@ class XSSScanner:
 
             try:
                 print("DEBUG: Creating HTTP service...")
+                # Use default ports when URL has no explicit port
+                port = parsed_url.getPort()
+                if port == -1:
+                    port = 443 if parsed_url.getProtocol() == "https" else 80
                 http_service = self._helpers.buildHttpService(
                     parsed_url.getHost(),
-                    parsed_url.getPort(),
+                    port,
                     parsed_url.getProtocol() == "https",
                 )
                 print("DEBUG: HTTP service created, making request with timeout...")
@@ -265,12 +275,99 @@ class XSSScanner:
                     ui_tab.addBackendLog("No WAF detected", "INFO")
 
             print("DEBUG: Starting parameter extraction...")
-            # Extract parameters from URL and forms
+            # === New: Crawling & Endpoint Discovery ===
+            crawl_depth = 0
+            max_urls = 0
+            try:
+                if ui_tab and hasattr(ui_tab, "crawlDepthField"):
+                    crawl_depth = int(ui_tab.crawlDepthField.getText().strip())
+                if ui_tab and hasattr(ui_tab, "maxUrlsField"):
+                    max_urls = int(ui_tab.maxUrlsField.getText().strip())
+            except Exception:
+                crawl_depth = 0
+                max_urls = 0
+
+            if (
+                crawl_depth > 0
+                and max_urls > 0
+                and ui_tab
+                and getattr(ui_tab, "enableCrawling", None)
+                and ui_tab.enableCrawling.isSelected()
+            ):
+                ui_tab.updateStatus(
+                    "Starting crawl: depth="
+                    + str(crawl_depth)
+                    + ", max URLs="
+                    + str(max_urls)
+                )
+                ui_tab.setProgress(12, "Crawling site...")
+                self._crawl_site(url, crawl_depth, max_urls, ui_tab)
+            else:
+                print("DEBUG: Crawling disabled or invalid settings - skipping crawl")
+                if ui_tab:
+                    ui_tab.addBackendLog(
+                        "Crawling disabled or invalid settings - skip", "INFO"
+                    )
+
+            # Extract parameters from baseline request first
             parameters = self._extract_parameters(request, response_body)
+            # Merge with any parameters discovered during crawl
+            parameters.extend(
+                [
+                    p
+                    for p in self.discovered_parameters
+                    if p["name"] not in [x["name"] for x in parameters]
+                ]
+            )
+            # Probe parameters based on UI toggle & custom wordlist
+            try:
+                probe_enabled = (
+                    ui_tab.enableParamProbing.isSelected()
+                    if ui_tab and hasattr(ui_tab, "enableParamProbing")
+                    else False
+                )
+                if probe_enabled:
+                    # Custom wordlist comes from textarea (newline/space/comma separated)
+                    raw_list = (
+                        ui_tab.paramProbeList.getText()
+                        if ui_tab and hasattr(ui_tab, "paramProbeList")
+                        else ""
+                    )
+                    custom_names = [
+                        w.strip() for w in re.split(r"[\s,]+", raw_list) if w.strip()
+                    ]
+                    existing_names = set([p["name"] for p in parameters])
+                    for name in custom_names:
+                        if name not in existing_names:
+                            parameters.append(
+                                {
+                                    "name": name,
+                                    "value": "",
+                                    "type": "url",
+                                    "location": "query",
+                                    "page": url,  # associate with root for probing
+                                }
+                            )
+                            existing_names.add(name)
+                            if ui_tab:
+                                ui_tab.addBackendLog(
+                                    "Added probed parameter from wordlist: " + name,
+                                    "DEBUG",
+                                )
+                else:
+                    if ui_tab:
+                        ui_tab.addBackendLog(
+                            "Parameter probing disabled (toggle off)", "INFO"
+                        )
+            except Exception as e:
+                if ui_tab:
+                    ui_tab.addBackendLog(
+                        "Parameter probing logic error: " + str(e), "ERROR"
+                    )
             print(
                 "DEBUG: Parameter extraction completed. Found "
                 + str(len(parameters))
-                + " parameters"
+                + " parameters total"
             )
 
             # Send endpoint discovery info to UI
@@ -394,6 +491,7 @@ class XSSScanner:
                             "value": value,
                             "type": "url",
                             "location": "query",
+                            "page": url.toString(),
                         }
                     )
         else:
@@ -420,6 +518,7 @@ class XSSScanner:
                                 "value": value,
                                 "type": "post",
                                 "location": "body",
+                                "page": url.toString(),
                             }
                         )
         else:
@@ -438,6 +537,7 @@ class XSSScanner:
                         "value": "",
                         "type": "form",
                         "location": "form",
+                        "page": url.toString(),
                     }
                 )
 
@@ -447,6 +547,266 @@ class XSSScanner:
             + " total parameters"
         )
         return parameters
+
+    # ---------------- New Crawling & Discovery Helpers -----------------
+    def _crawl_site(self, start_url, max_depth, max_urls, ui_tab=None):
+        """Breadth-first crawl starting from start_url up to max_depth collecting endpoints & parameters."""
+        print(
+            "DEBUG: _crawl_site() starting: depth="
+            + str(max_depth)
+            + ", max_urls="
+            + str(max_urls)
+        )
+        # Ensure scheme present for start URL
+        start = start_url if start_url.startswith("http") else "http://" + start_url
+        queue = [(start, 0)]
+
+        while queue and self.is_scanning and len(self.visited_urls) < max_urls:
+            current_url, depth = queue.pop(0)
+            if depth > max_depth:
+                continue
+            try:
+                normalized = self._normalize_url(current_url)
+                if normalized in self.visited_urls:
+                    continue
+                self.visited_urls.add(normalized)
+                if ui_tab:
+                    ui_tab.addDiscoveredUrl(
+                        normalized, info="Crawling depth " + str(depth)
+                    )
+                # Build and send request
+                parsed = URL(normalized)
+                request = self._helpers.buildHttpRequest(parsed)
+                # Default port handling
+                pport = parsed.getPort()
+                if pport == -1:
+                    pport = 443 if parsed.getProtocol() == "https" else 80
+                service = self._helpers.buildHttpService(
+                    parsed.getHost(), pport, parsed.getProtocol() == "https"
+                )
+                # Use a slightly longer timeout for crawl to handle slow pages
+                response = self._send_request_with_timeout(
+                    request, service, ui_tab, request_type="crawl"
+                )
+                if not response:
+                    continue
+                response_info = self._helpers.analyzeResponse(response.getResponse())
+                body_offset = response_info.getBodyOffset()
+                body = self._helpers.bytesToString(response.getResponse())[body_offset:]
+                # Handle redirects explicitly to keep crawl moving
+                try:
+                    status = response_info.getStatusCode()
+                    if status >= 300 and status < 400:
+                        for header in response_info.getHeaders():
+                            if header.lower().startswith("location:"):
+                                loc = header.split(":", 1)[1].strip()
+                                redir = self._resolve_url(normalized, loc)
+                                nredir = self._normalize_url(redir)
+                                if nredir not in self.visited_urls:
+                                    queue.append((nredir, depth + 1))
+                                    if ui_tab:
+                                        ui_tab.addDiscoveredUrl(
+                                            nredir, info="Redirect queued"
+                                        )
+                                break
+                except Exception:
+                    pass
+                # Extract links
+                links = self._extract_links(body, normalized)
+                # Seed with robots.txt and sitemap URLs from root host on first page
+                try:
+                    if depth == 0:
+                        root = re.match(r"^(https?://[^/]+)", normalized)
+                        if root:
+                            base = root.group(1)
+                            links.extend([base + "/robots.txt", base + "/sitemap.xml"])
+                except Exception:
+                    pass
+                for link in links:
+                    if len(self.visited_urls) >= max_urls:
+                        break
+                    nlink = self._normalize_url(link)
+                    if nlink not in self.visited_urls and depth + 1 <= max_depth:
+                        queue.append((nlink, depth + 1))
+                        if ui_tab:
+                            ui_tab.addDiscoveredUrl(
+                                nlink, info="Queued depth " + str(depth + 1)
+                            )
+                # Extract form inputs as potential parameters
+                form_inputs = self._extract_form_inputs(body)
+                for name in form_inputs:
+                    if name not in [p["name"] for p in self.discovered_parameters]:
+                        self.discovered_parameters.append(
+                            {
+                                "name": name,
+                                "value": "",
+                                "type": "form",
+                                "location": "form",
+                                "page": normalized,
+                            }
+                        )
+                        if ui_tab:
+                            ui_tab.addBackendLog(
+                                "Discovered form parameter: " + name, "DEBUG"
+                            )
+                # Also extract parameters from URLs found in page content and scripts
+                link_params = []
+                try:
+                    for link in links:
+                        link_params.extend(self._extract_query_params(link))
+                    # From inline script/text occurrences key=value
+                    for m in re.finditer(r"[?&]([a-zA-Z0-9_\-]+)=([^\s'\"]+)", body):
+                        link_params.append((m.group(1), m.group(2)))
+                    # If robots.txt fetched, parse Disallow/Allow lines to build URLs
+                    if normalized.endswith("/robots.txt"):
+                        for r in re.finditer(
+                            r"^(?:Allow|Disallow):\s*(/[^\s#]+)",
+                            body,
+                            re.MULTILINE | re.IGNORECASE,
+                        ):
+                            root = re.match(r"^(https?://[^/]+)", normalized)
+                            if root:
+                                links.append(root.group(1) + r.group(1))
+                    # If sitemap.xml fetched, parse <loc> entries
+                    if normalized.endswith("/sitemap.xml"):
+                        for sm in re.finditer(
+                            r"<loc>\s*([^<\s]+)\s*</loc>", body, re.IGNORECASE
+                        ):
+                            links.append(sm.group(1))
+                except Exception:
+                    pass
+                for pname, pval in link_params:
+                    if pname not in [p["name"] for p in self.discovered_parameters]:
+                        self.discovered_parameters.append(
+                            {
+                                "name": pname,
+                                "value": pval,
+                                "type": "url",
+                                "location": "query",
+                                "page": normalized,
+                            }
+                        )
+                        if ui_tab:
+                            ui_tab.addBackendLog(
+                                "Discovered URL parameter: " + pname, "DEBUG"
+                            )
+                # Live parameter count update
+                try:
+                    if ui_tab:
+                        ui_tab.updateStatus(
+                            "Parameters discovered so far: "
+                            + str(len(self.discovered_parameters))
+                        )
+                except Exception:
+                    pass
+                    # Also extract URL query parameters from links on this page
+                    link_params = []
+                    try:
+                        for link in links:
+                            link_params.extend(self._extract_query_params(link))
+                    except Exception:
+                        pass
+                    for pname, pval in link_params:
+                        if pname not in [p["name"] for p in self.discovered_parameters]:
+                            self.discovered_parameters.append(
+                                {
+                                    "name": pname,
+                                    "value": pval,
+                                    "type": "url",
+                                    "location": "query",
+                                }
+                            )
+                            if ui_tab:
+                                ui_tab.addBackendLog(
+                                    "Discovered URL parameter: " + pname, "DEBUG"
+                                )
+            except Exception as e:
+                print("DEBUG: Crawl error: " + str(e))
+                if ui_tab:
+                    ui_tab.addBackendLog(
+                        "Crawl error on URL: " + current_url + " - " + str(e), "ERROR"
+                    )
+        print(
+            "DEBUG: _crawl_site() completed. Visited URLs: "
+            + str(len(self.visited_urls))
+        )
+
+    def _extract_links(self, html, base_url):
+        """Extract anchor href links and form action URLs from HTML."""
+        links = set()
+        try:
+            # Anchor tags
+            for m in re.finditer(
+                r'<a[^>]+href\s*=\s*["\']([^"\']+)["\']', html, re.IGNORECASE
+            ):
+                href = m.group(1)
+                full = self._resolve_url(base_url, href)
+                links.add(full)
+            # Form actions
+            for m in re.finditer(
+                r'<form[^>]+action\s*=\s*["\']([^"\']+)["\']', html, re.IGNORECASE
+            ):
+                action = m.group(1)
+                full = self._resolve_url(base_url, action)
+                links.add(full)
+        except Exception:
+            pass
+        return list(links)
+
+    def _resolve_url(self, base, link):
+        """Resolve relative link against base URL."""
+        try:
+            if link.startswith("http://") or link.startswith("https://"):
+                return link
+            # Simple resolution (avoid importing full urljoin in Jython if not available)
+            if link.startswith("/"):
+                # Extract scheme+host from base
+                m = re.match(r"^(https?://[^/]+)", base)
+                if m:
+                    return m.group(1) + link
+            else:
+                if base.endswith("/"):
+                    return base + link
+                else:
+                    return base.rsplit("/", 1)[0] + "/" + link
+        except Exception:
+            return link
+        return link
+
+    def _normalize_url(self, url):
+        """Basic normalization to avoid duplicates (strip trailing slash, lowercase host)."""
+        if not url:
+            return url
+        url = url.strip()
+        # Remove fragments
+        url = re.sub(r"#.*$", "", url)
+        # Lowercase scheme & host
+        m = re.match(r"^(https?://)([^/]+)(/.*)?$", url, re.IGNORECASE)
+        if m:
+            scheme = m.group(1).lower()
+            host = m.group(2).lower()
+            path = m.group(3) if m.group(3) else ""
+            if path.endswith("/") and path != "/":
+                path = path[:-1]
+            # Ensure scheme contains //
+            return scheme + host + path
+        return url
+
+    def _extract_query_params(self, url):
+        """Extract (name, value) pairs from a URL query string."""
+        params = []
+        try:
+            m = re.search(r"\?(.*)$", url)
+            if not m:
+                return params
+            query = m.group(1)
+            for part in query.split("&"):
+                if "=" in part:
+                    name, value = part.split("=", 1)
+                    params.append((name, value))
+        except Exception:
+            pass
+        return params
 
     def _extract_form_inputs(self, html):
         """Extract form input names from HTML"""
@@ -475,6 +835,9 @@ class XSSScanner:
     def _test_parameter(self, base_url, param, csp_analysis, waf_info, ui_tab=None):
         """Test a specific parameter for XSS"""
         param_name = param["name"]
+
+        # Use parameter-specific page if available
+        test_base = param.get("page") or base_url
 
         if ui_tab:
             ui_tab.updateStatus("Testing parameter: " + param_name)
@@ -530,7 +893,7 @@ class XSSScanner:
                     )
 
                 # Create test request
-                test_request = self._create_test_request(base_url, param, payload)
+                test_request = self._create_test_request(test_base, param, payload)
 
                 if ui_tab:
                     ui_tab.addBackendLog(
@@ -567,7 +930,7 @@ class XSSScanner:
                                 "WARN",
                             )
                             ui_tab.addResult(
-                                base_url,
+                                test_base,
                                 param_name,
                                 payload,
                                 result["type"],
@@ -578,7 +941,7 @@ class XSSScanner:
                             ui_tab.updateStatus("XSS found in parameter: " + param_name)
 
                         # Log to Burp
-                        self._log_finding(base_url, param_name, payload, result)
+                        self._log_finding(test_base, param_name, payload, result)
                         break  # Found XSS, move to next parameter
                     else:
                         print("No XSS detected in response")
@@ -759,8 +1122,12 @@ class XSSScanner:
             request_info = self._helpers.analyzeRequest(request)
             url = request_info.getUrl()
 
+            # Fix: default port handling to avoid -1 causing request failure
+            port = url.getPort()
+            if port == -1:
+                port = 443 if url.getProtocol() == "https" else 80
             http_service = self._helpers.buildHttpService(
-                url.getHost(), url.getPort(), url.getProtocol() == "https"
+                url.getHost(), port, url.getProtocol() == "https"
             )
 
             # Add timeout handling
