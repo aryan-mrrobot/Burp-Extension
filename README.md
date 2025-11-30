@@ -16,7 +16,7 @@ XSS Hunter Pro is a comprehensive Burp Suite extension designed to detect reflec
 
 ### User Interface
 
-- **Scanner Tab**: Configure and run XSS scans with various options
+- **Scanner Tab**: Configure and run XSS scans with various options!
 - **Results Tab**: View and manage scan results with severity indicators
 - **Payloads Tab**: Manage and customize XSS payloads
 - **Configuration Tab**: Configure extension settings and preferences
