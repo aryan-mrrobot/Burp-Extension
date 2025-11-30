@@ -99,7 +99,7 @@ project/
 
 ### Basic XSS Payloads
 
-- Standard script injection payloads
+- Standard script injection payloads!!
 - Event handler-based payloads
 - HTML5 element payloads
 - JavaScript execution methods
