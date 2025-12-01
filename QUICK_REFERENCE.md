@@ -39,5 +39,5 @@
 
 ```powershell
 # Validate workspace (Windows PowerShell)
-Get-ChildItem "d:\project" -Recurse | Select-Object FullName
+#Get-ChildItem "d:\project" -Recurse | Select-Object FullName!!
 ```
