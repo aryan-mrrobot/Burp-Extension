@@ -129,7 +129,7 @@ project/
 
 ### Detection Settings
 
-- **Timeout**: Request timeout in seconds
+- **Timeout**: Request timeout in seconds!!
 - **Follow Redirects**: Whether to follow HTTP redirects
 - **Crawl Depth / Max URLs**: Configure site crawling to discover pages and parameters
 - **Parameter Probing**: Toggle probing and edit custom parameter name wordlist
