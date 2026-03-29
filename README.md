@@ -1,6 +1,6 @@
 # XSS Hunter Pro - Advanced Burp Suite Extension for XSS Detection
 
-## Overview
+## Overview of the projects 
 
 XSS Hunter Pro is a comprehensive Burp Suite extension designed to detect reflected Cross-Site Scripting (XSS) vulnerabilities with advanced capabilities for bypassing Content Security Policy (CSP) and Web Application Firewalls (WAF).
 
